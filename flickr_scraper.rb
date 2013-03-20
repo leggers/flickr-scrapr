@@ -16,10 +16,11 @@ class Scraper
 
   def make_dir name
     p name
+    FileUtils.cd 'files'
     begin
       FileUtils.mkdir name
     rescue Exception => e
-      
+      p e #will rescue errno::exists and prompt user to delete folder or add to it... i hope
     end
     FileUtils.cd name
   end
@@ -32,30 +33,19 @@ class Scraper
 
   def scrape(data_file, url, name)
    page = $guy.get url
-   # p page
-   rest_of_page = page.body.match(/photo-display-container/)
-   while rest_of_page
-    rest_of_page = rest_of_page.post_match.match(/href="/).post_match
-    pic_url = "http://www.flickr.com/#{rest_of_page.match('"').pre_match}/lightbox/"
-    pic_page = $guy.get pic_url
+   image_links = page.links_with(href: /\/in\/set/)
+   for pic_link in image_links.uniq{|x| x.to_s} do
+    pic_page = pic_link.click
     sizes_page = pic_page.link_with(href: /sizes/).click
     size_links = sizes_page.links_with(href: /sizes/)
-    pic_number = get_number(pic_url, name)
-    original = original_image(size_links, pic_number)
-    exit
+    original = original_image size_links
    end
   end
-
-  def get_number(pic_url, name)
-    return pic_url.match("#{name}/").post_match.match("/in").pre_match
-  end
-
-  def original_image(size_links, pic_number)
+ 
+  def original_image size_links
     for link in size_links
       if link.text.match(/original/i)
         image_page = link.click
-        # p pic_number
-        # p image_page
         image = image_page.image_with(src: /staticflickr/)
         p image
       end
