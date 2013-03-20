@@ -11,7 +11,7 @@ class Scraper
     name = /photos\//.match(url).post_match.match('/').pre_match
     images_file = make_dir name
     make_files
-    scrape(images_file, url)
+    scrape(images_file, url, name)
   end
 
   def make_dir name
@@ -30,7 +30,7 @@ class Scraper
     File.new "images.txt", "a+"
   end
 
-  def scrape(data_file, url)
+  def scrape(data_file, url, name)
    page = $guy.get url
    # p page
    rest_of_page = page.body.match(/photo-display-container/)
@@ -39,9 +39,27 @@ class Scraper
     pic_url = "http://www.flickr.com/#{rest_of_page.match('"').pre_match}/lightbox/"
     pic_page = $guy.get pic_url
     sizes_page = pic_page.link_with(href: /sizes/).click
-    p sizes_page
+    size_links = sizes_page.links_with(href: /sizes/)
+    pic_number = get_number(pic_url, name)
+    original = original_image(size_links, pic_number)
     exit
    end
+  end
+
+  def get_number(pic_url, name)
+    return pic_url.match("#{name}/").post_match.match("/in").pre_match
+  end
+
+  def original_image(size_links, pic_number)
+    for link in size_links
+      if link.text.match(/original/i)
+        image_page = link.click
+        # p pic_number
+        # p image_page
+        image = image_page.image_with(src: /staticflickr/)
+        p image
+      end
+    end
   end
 end
 
