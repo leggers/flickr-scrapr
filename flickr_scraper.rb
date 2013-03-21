@@ -1,7 +1,5 @@
 require 'mechanize'
 require 'logger'
-require 'sanitize'
-require 'aws/s3'
 
 class Scraper
 
@@ -45,9 +43,11 @@ class Scraper
   def original_image size_links
     for link in size_links
       if link.text.match(/original/i)
+        # p link
         image_page = link.click
-        image = image_page.image_with(src: /staticflickr/)
-        p image
+        image_url = image_page.image_with(src: /staticflickr/).url
+        image = $guy.get image_url
+        image.save
       end
     end
   end
